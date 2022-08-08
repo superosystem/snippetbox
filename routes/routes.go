@@ -5,6 +5,7 @@ import (
 	"github.com/gusrylmubarok/ism-api-golang/controllers"
 )
 
-func Setup(app fiber.App) {
-	app.Get("/", controllers.Hello)
+func Setup(app *fiber.App) {
+	app.Post("/api/register", controllers.Registration)
+	app.Post("/api/login", controllers.Login)
 }
