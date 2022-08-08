@@ -15,4 +15,12 @@ func Setup(app *fiber.App) {
 	app.Use(middlewares.IsAuthenticated)
 	app.Get("/api/user", controllers.User)
 	app.Post("/api/logout", controllers.Logout)
+
+	// API for Handle User
+	app.Get("/api/users", controllers.FindAllUsers)
+	app.Get("/api/users/:id", controllers.FindUserById)
+	app.Post("/api/users", controllers.CreateUser)
+	app.Put("/api/users/:id", controllers.UpdateUser)
+	app.Delete("/api/users/:id", controllers.DeleteUserById)
+
 }

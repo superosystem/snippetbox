@@ -9,7 +9,6 @@ import (
 	"github.com/gusrylmubarok/ism-api-golang/database"
 	"github.com/gusrylmubarok/ism-api-golang/models"
 	"github.com/gusrylmubarok/ism-api-golang/util"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func Registration(c *fiber.Ctx) error {
@@ -28,16 +27,15 @@ func Registration(c *fiber.Ctx) error {
 		})
 	}
 
-	// Hash password with BCrypt Method
-	password, _ := bcrypt.GenerateFromPassword([]byte(data["password"]), 14)
-
 	// Set Request to Model
 	user := models.User{
 		FirstName:	data["first_name"],
 		LastName: 	data["last_name"],
 		Email: 		data["email"],
-		Password: 	password,
 	}
+
+	// Hash password with BCrypt Method
+	user.SetPassword(data["password"])
 
 	// Save to database
 	database.DB.Create(&user)
@@ -65,7 +63,7 @@ func Login(c *fiber.Ctx) error {
 	}
 
 	// Compare password account
-	if err := bcrypt.CompareHashAndPassword(user.Password, []byte(data["password"])); err != nil {
+	if err := user.ComparePassword(data["password"]); err != nil {
 		c.Status(400)
 		return c.JSON(fiber.Map{
 			"message": "Password is incorrect",
