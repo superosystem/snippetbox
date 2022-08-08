@@ -1,7 +1,11 @@
 package controllers
 
 import (
+	"strconv"
+	"time"
+
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/gusrylmubarok/ism-api-golang/database"
 	"github.com/gusrylmubarok/ism-api-golang/models"
 	"golang.org/x/crypto/bcrypt"
@@ -60,5 +64,67 @@ func Login(c *fiber.Ctx) error {
 		})
 	}
 
+	// JWT Provider
+	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
+		Issuer: strconv.Itoa(int(user.Id)),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24)),
+	})
+	// Generate Token
+	token, err := claims.SignedString([]byte("secret"))
+	if err != nil {
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	// Set Key into Cookie
+	cookie := fiber.Cookie {
+		Name: "jwt",
+		Value: token,
+		Expires: time.Now().Add(time.Hour * 24),
+		HTTPOnly: true,
+	}
+	c.Cookie(&cookie)
+	
+	return c.JSON(fiber.Map {
+		"message": "Login Succsses.",
+	})
+}
+
+type Claims struct{
+	jwt.RegisteredClaims
+}
+
+func User(c *fiber.Ctx) error {
+	cookie := c.Cookies("jwt")
+	token, err := jwt.ParseWithClaims(cookie, &Claims{}, func (token *jwt.Token) (interface{}, error) {
+		return 	[]byte("secret"), nil
+	})
+	// User Account is Unauthenticated
+	if err != nil || !token.Valid{
+		c.Status(fiber.StatusUnauthorized)
+		return c.JSON(fiber.Map{
+			"message": "Unauthenticated.",
+		})
+	}
+	// Get all value from claims
+	claims := token.Claims.(*Claims)
+	// Get data user from Id or Issuer
+	var user models.User
+	database.DB.Where("id = ?", claims.Issuer).First(&user)
+	
 	return c.JSON(user)
+}
+
+func Logout(c *fiber.Ctx) error {
+	// Set value cookie and expiration time to unvalid 
+	cookie := fiber.Cookie {
+		Name:		"jwt",
+		Value: 		"",
+		Expires:	time.Now().Add(-time.Hour),
+		HTTPOnly: 	true,
+	}
+
+	c.Cookie(&cookie)
+
+	return c.JSON(fiber.Map{
+		"message": "Logout is success.",
+	})
 }
