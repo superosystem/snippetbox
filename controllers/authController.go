@@ -8,6 +8,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/gusrylmubarok/ism-api-golang/database"
 	"github.com/gusrylmubarok/ism-api-golang/models"
+	"github.com/gusrylmubarok/ism-api-golang/util"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -18,6 +19,7 @@ func Registration(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+	
 	// Check Password Request have to match
 	if data["password"] != data["password_confirm"] {
 		c.Status(400)
@@ -25,8 +27,10 @@ func Registration(c *fiber.Ctx) error {
 			"message": "Password do not match.",
 		})
 	}
+
 	// Hash password with BCrypt Method
 	password, _ := bcrypt.GenerateFromPassword([]byte(data["password"]), 14)
+
 	// Set Request to Model
 	user := models.User{
 		FirstName:	data["first_name"],
@@ -34,8 +38,10 @@ func Registration(c *fiber.Ctx) error {
 		Email: 		data["email"],
 		Password: 	password,
 	}
+
 	// Save to database
 	database.DB.Create(&user)
+
 	// Send Response
 	return c.JSON(user)
 }
@@ -47,6 +53,7 @@ func Login(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+
 	// Check email account has been registration
 	var user models.User
 	database.DB.Where("email = ?", data["email"]).First(&user)
@@ -56,6 +63,7 @@ func Login(c *fiber.Ctx) error {
 			"message": "Account is not found.",
 		})
 	}
+
 	// Compare password account
 	if err := bcrypt.CompareHashAndPassword(user.Password, []byte(data["password"])); err != nil {
 		c.Status(400)
@@ -64,16 +72,12 @@ func Login(c *fiber.Ctx) error {
 		})
 	}
 
-	// JWT Provider
-	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
-		Issuer: strconv.Itoa(int(user.Id)),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24)),
-	})
 	// Generate Token
-	token, err := claims.SignedString([]byte("secret"))
+	token, err := util.GenerateJwt(strconv.Itoa(int(user.Id)))
 	if err != nil {
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
+
 	// Set Key into Cookie
 	cookie := fiber.Cookie {
 		Name: "jwt",
@@ -82,7 +86,8 @@ func Login(c *fiber.Ctx) error {
 		HTTPOnly: true,
 	}
 	c.Cookie(&cookie)
-	
+
+	// Send Response
 	return c.JSON(fiber.Map {
 		"message": "Login Succsses.",
 	})
@@ -93,23 +98,15 @@ type Claims struct{
 }
 
 func User(c *fiber.Ctx) error {
+	// Parsing Jwt or Validate form Cookie
 	cookie := c.Cookies("jwt")
-	token, err := jwt.ParseWithClaims(cookie, &Claims{}, func (token *jwt.Token) (interface{}, error) {
-		return 	[]byte("secret"), nil
-	})
-	// User Account is Unauthenticated
-	if err != nil || !token.Valid{
-		c.Status(fiber.StatusUnauthorized)
-		return c.JSON(fiber.Map{
-			"message": "Unauthenticated.",
-		})
-	}
-	// Get all value from claims
-	claims := token.Claims.(*Claims)
+	id, _ := util.ParseJwt(cookie)
+
 	// Get data user from Id or Issuer
 	var user models.User
-	database.DB.Where("id = ?", claims.Issuer).First(&user)
-	
+	database.DB.Where("id = ?", id).First(&user)
+
+	// Send Response
 	return c.JSON(user)
 }
 
@@ -121,9 +118,9 @@ func Logout(c *fiber.Ctx) error {
 		Expires:	time.Now().Add(-time.Hour),
 		HTTPOnly: 	true,
 	}
-
 	c.Cookie(&cookie)
 
+	// Send Response
 	return c.JSON(fiber.Map{
 		"message": "Logout is success.",
 	})
