@@ -1,22 +1,19 @@
 package main
 
 import (
-	"github.com/gusrylmubarok/goadminproject/database"
-	"github.com/gusrylmubarok/goadminproject/routes"
-	"github.com/gofiber/fiber"
-	"github.com/gofiber/cors"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gusrylmubarok/ism-api-golang/configuration"
 )
 
 func main() {
-	database.Connect()
+
+	configuration.Connection()
 
 	app := fiber.New()
 
-	app.Use(cors.New(cors.Config{
-		AllowCredentials: true,
-	}))
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.SendString("Helllo, World!")
+	})
 
-	routes.Setup(app)
-
-	app.Listen(":8000")
+	app.Listen(":3000")
 }
