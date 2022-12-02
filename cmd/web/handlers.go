@@ -14,49 +14,20 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 		app.notFound(w)
 		return
 	}
-
 	snippets, err := app.snippets.Latest()
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
 
-	for _, snippet := range snippets {
-		fmt.Fprintf(w, "%+v\n", snippet)
-	}
-
-	/*
-
-	// Include the navigation partial the template files.
-	files := []string{
-		"./ui/html/base.html",
-		"./ui/html/partials/nav.html",
-		"./ui/html/pages/home.html",
-	}
-
-	// Use the template.ParseFiles() function to read the template file into a
-	// template set. If there's an error, we log the detailed error message and use
-	// the http.Error() function to send a generic 500 Internal Server Error
-	// response to the user.
-	ts, err := template.ParseFiles(files...)
-	if err != nil {
-		app.errorLog.Println(err.Error())
-		app.serverError(w, err)
-		return
-	}
-
-	// We then use the Execute() method on the template set to write the
-	// template content as the response body. The last parameter to Execute()
-	// represents any dynamic data that we want to pass in, which for now we'll
-	// leave as nil.
-	err = ts.ExecuteTemplate(w, "base", nil)
-	if err != nil {
-		app.errorLog.Println(err.Error())
-		app.serverError(w, err)
-	}
-	*/
+	// Call the newTemplateData() helper to get a templateData struct containing
+	// the 'default' data (which for now is just the current year), and add the
+	// snippets slice to it.
+	data := app.newTemplateData(r)
+	data.Snippets = snippets
+	// Pass the data to the render() helper as normal.
+	app.render(w, http.StatusOK, "home.tmpl", data)
 }
-
 func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.URL.Query().Get("id"))
 	if err != nil || id < 1 {
@@ -73,8 +44,10 @@ func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-
-	fmt.Fprintf(w, "%+v", snippet)
+	// And do the same thing again here...
+	data := app.newTemplateData(r)
+	data.Snippet = snippet
+	app.render(w, http.StatusOK, "view.tmpl", data)
 }
 
 func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
