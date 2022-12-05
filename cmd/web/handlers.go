@@ -96,7 +96,7 @@ func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 	if !form.Valid() {
 		data := app.newTemplateData(r)
 		data.Form = form
-		
+
 		app.render(w, http.StatusUnprocessableEntity, "create.tmpl", data)
 		return
 	}
@@ -219,4 +219,8 @@ func (app *application) userLogoutPost(w http.ResponseWriter, r *http.Request) {
 	app.sessionManager.Put(r.Context(), "flash", "You've been logged out successfully!")
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func ping(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("OK"))
 }

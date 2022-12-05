@@ -13,6 +13,7 @@
 | POST | /users/login   | userLoginPost   | Authenticate and login the user   |
 | POST | /users/logout   | userLogoutPost   | Logout the user   |
 | GET | /static/*filepath   | http.FileServer   | Server a specific static file   |
+| GET | /ping   | ping   | Return a 200 OK response   |
 
 
 ## Security Improvements
