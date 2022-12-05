@@ -1,5 +1,12 @@
 # Snippetbox
 
+
+## Pre-Requisite
+- Setup database Connection
+```bash
+sql.Open(username:password)
+```
+
 ## Routing request
 | Method | URL Pattern | Handler    | Action    |
 | :---:   | :---: | :---: | :---: |
