@@ -12,10 +12,10 @@ import (
 )
 
 type snippetCreateForm struct {
-	Title               string
-	Content             string
-	Expires             int
-	validator.Validator `form:"-"`
+	Title               string `form:"title"`
+	Content             string `form:"content"`
+	Expires             int `form:"expires"`
+	validator.Validator `form:"-"` 
 }
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
@@ -33,6 +33,7 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
 	params := httprouter.ParamsFromContext(r.Context())
+
 	id, err := strconv.Atoi(params.ByName("id"))
 	if err != nil || id < 1 {
 		app.notFound(w)
@@ -91,6 +92,8 @@ func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 		app.serverError(w, err)
 		return
 	}
+
+	app.sessionManager.Put(r.Context(), "flash", "Snippet successfully created!")
 
 	http.Redirect(w, r, fmt.Sprintf("/snippet/view/%d", id), http.StatusSeeOther)
 }
